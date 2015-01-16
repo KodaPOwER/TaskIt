@@ -1,9 +1,9 @@
 package it.mytest.simone.taskit;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,6 +14,7 @@ import android.widget.EditText;
 
 import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Date;
 
 
 public class TaskActivity extends ActionBarActivity {
@@ -22,39 +23,46 @@ public class TaskActivity extends ActionBarActivity {
     private static final String TAG = "TaskActivity";
 
     private Calendar mCal;
+    private Button mDateButton;
+    private EditText mTaskNameInput;
+    private Task mTask;
+    private CheckBox mDoneBox;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task);
 
-        Task task = (Task)getIntent().getSerializableExtra(EXTRA);
+        mTask = (Task)getIntent().getSerializableExtra(EXTRA);
 
         mCal = Calendar.getInstance();
-        mCal.setTime(task.getDueDate());
 
-        EditText taskNameInput = (EditText)findViewById(R.id.task_name);
-        Button dateButton = (Button)findViewById(R.id.task_date);
-        CheckBox doneBox = (CheckBox)findViewById(R.id.task_done);
+        mTaskNameInput = (EditText)findViewById(R.id.task_name);
+        mDateButton = (Button)findViewById(R.id.task_date);
+        mDoneBox = (CheckBox)findViewById(R.id.task_done);
         Button saveButton = (Button)findViewById(R.id.save_button);
 
-        taskNameInput.setText(task.getName());
-        if(task.getDueDate() == null){
-            dateButton.setText(getResources().getString(R.string.no_date));
+        mTaskNameInput.setText(mTask.getName());
+        if(mTask.getDueDate() == null){
+            mCal.setTime(new Date());
+            mDateButton.setText(getResources().getString(R.string.no_date));
         }
         else
         {
-            DateFormat df = DateFormat.getDateInstance();
-            dateButton.setText(df.format(task.getDueDate()));
+            mCal.setTime(mTask.getDueDate());
+            updateButton();
         }
-        doneBox.setChecked(task.isDone());
+        mDoneBox.setChecked(mTask.isDone());
 
-        dateButton.setOnClickListener(new View.OnClickListener() {
+        mDateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 DatePickerDialog dpd = new DatePickerDialog(TaskActivity.this, new DatePickerDialog.OnDateSetListener() {
                     @Override
                     public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                        
+                        mCal.set(Calendar.YEAR,year);
+                        mCal.set(Calendar.MONTH,monthOfYear);
+                        mCal.set(Calendar.DAY_OF_MONTH,dayOfMonth);
+                        updateButton();
                     }
                 }, mCal.get(Calendar.YEAR), mCal.get(Calendar.MONTH), mCal.get(Calendar.DAY_OF_MONTH));
 
@@ -65,11 +73,22 @@ public class TaskActivity extends ActionBarActivity {
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mTask.setName(mTaskNameInput.getText().toString());
+                mTask.setDone(mDoneBox.isChecked());
+                mTask.setDueDate(mCal.getTime());
 
+                Intent i = new Intent();
+                i.putExtra(EXTRA, mTask);
+                setResult(RESULT_OK,i);
+                finish();
             }
         });
     }
 
+    private void updateButton(){
+        DateFormat df = DateFormat.getDateInstance();
+        mDateButton.setText(df.format(mCal.getTime()));
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
